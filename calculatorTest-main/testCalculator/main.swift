@@ -7,7 +7,13 @@
 
 import Foundation
 
-enum Precedence: CaseIterable {
+
+class Data {
+    static var medianNotation: [String] = []
+    static var postfixNotation: [String] = []
+}
+
+enum Precedence {
     case bitwisePrecedence
     case multiplicationPrecedence
     case additionPrecedence
@@ -21,8 +27,17 @@ extension Precedence: Comparable {
         default:
             return false
         }
- 
     }
+
+    static func < (lhs: Precedence, rhs: Precedence) -> Bool {
+        switch (lhs, rhs) {
+        case (.bitwisePrecedence, .multiplicationPrecedence), (.bitwisePrecedence, .additionPrecedence), (.multiplicationPrecedence, .additionPrecedence):
+            return false
+        default:
+            return true
+        }
+    }
+
     static func == (lhs: Precedence, rhs: Precedence) -> Bool {
         switch (lhs, rhs) {
         case (.bitwisePrecedence, .bitwisePrecedence), (.multiplicationPrecedence, .multiplicationPrecedence), (.additionPrecedence, .additionPrecedence):
@@ -32,6 +47,7 @@ extension Precedence: Comparable {
         }
     }
 }
+
 enum Operators: String, CaseIterable {
     case multiplication = "*"
     case division = "/"
@@ -62,47 +78,44 @@ enum Operators: String, CaseIterable {
     }
 }
 
+
+
 class InputDataValidation {
     typealias Precedence = Int
-    
-    static let sharedInstance = InputDataValidation()
-    var medianNotation: [String] = []
-    
-    private init() {}
     
     private func filterAdditionalIncomingData(currentData: String, previousData: String) {
         switch Operators.list.contains(previousData) {
         case true :
             if Operators.list.contains(currentData){
-                medianNotation.removeLast()
-                medianNotation.append(currentData)
+                Data.medianNotation.removeLast()
+                Data.medianNotation.append(currentData)
             } else {
-                medianNotation.append(currentData)
+                Data.medianNotation.append(currentData)
             }
         case false :
             if Operators.list.contains(currentData) {
-                medianNotation.append(currentData)
+                Data.medianNotation.append(currentData)
             } else {
-                medianNotation.removeLast()
-                medianNotation.append(previousData + currentData)
+                Data.medianNotation.removeLast()
+                Data.medianNotation.append(previousData + currentData)
             }
         }
     }
     
     private func filterInitialIncomingData(_ inputData: String) {
         if inputData == "~" || !Operators.list.contains(inputData) {
-            medianNotation.append(inputData)
+            Data.medianNotation.append(inputData)
         } else {
-            medianNotation = []
+            Data.medianNotation = []
         }
     }
     
     func manageData(input: String) {
-        if medianNotation.isEmpty {
+        if Data.medianNotation.isEmpty {
             filterInitialIncomingData(input)
         }
         else {
-            guard let finalElement = medianNotation.last else { return }
+            guard let finalElement = Data.medianNotation.last else { return }
             
             filterAdditionalIncomingData(currentData: input, previousData: finalElement)
         }
@@ -110,9 +123,7 @@ class InputDataValidation {
 }
 
 class GeneralCalculation {
-    static let sharedInstance = GeneralCalculation()
-    var medianNotation = InputDataValidation.sharedInstance.medianNotation
-    var postfixNotation: [String] = []
+    var decimalCalcualtion = DecimalCalculation()
     var operatorStack = Stack<String>()
     
     private func distinguishOperatorFromOperand(_ element: String) {
@@ -120,7 +131,7 @@ class GeneralCalculation {
             pushPriorOperator(element)
         }
         else {
-            postfixNotation.append(element)
+            Data.postfixNotation.append(element)
         }
     }
     
@@ -133,32 +144,32 @@ class GeneralCalculation {
             guard let incomingOperator = Operators(rawValue: element),
                   let stackedOperator = Operators(rawValue: peeked.value) else { return }
                   
-            while incomingOperator.precedence > stackedOperator.precedence || incomingOperator.precedence == stackedOperator.precedence {
+            while incomingOperator.precedence < stackedOperator.precedence || incomingOperator.precedence == stackedOperator.precedence {
                 guard let popped = operatorStack.pop() else { break }
                 
-                postfixNotation.append(popped.value)
+                Data.postfixNotation.append(popped.value)
             }
-            operatorStack.push(element)
+                operatorStack.push(element)
         }
     }
     
     private func appendRemainingOperators() {
         while !operatorStack.isEmpty() {
-            if let remainder = operatorStack.pop()?.value {
-                postfixNotation.append(remainder)
-            }
-            break
+            guard let remainder = operatorStack.pop()?.value else { return }
+            
+            Data.postfixNotation.append(remainder)
         }
     }
     
     func convertToPostfixNotation() {
-        if Operators.list.contains(medianNotation.last!) {
-            medianNotation.removeLast()
+        if Operators.list.contains(Data.medianNotation.last!) {
+            Data.medianNotation.removeLast()
         }
-        for element in medianNotation {
+        for element in Data.medianNotation {
             distinguishOperatorFromOperand(element)
         }
         appendRemainingOperators()
+        decimalCalcualtion.calculatePostfixNotation()
     }
 }
 
@@ -166,16 +177,15 @@ class GeneralCalculation {
 class DecimalCalculation {
     typealias Precedence = Int
     
-    var postfixNotation = GeneralCalculation.sharedInstance.postfixNotation
     var firstOperand = Double()
     var secondOperand = Double()
     
     func calculatePostfixNotation() {
         var operandStack = Stack<Double>()
-        dump(postfixNotation)
+
         
-        for element in postfixNotation {
-            if Operators.list.contains(element) {
+        for element in Data.postfixNotation {
+            if !Operators.list.contains(element) {
                 guard let numbers = Double(element) else { return }
                 
                 operandStack.push(numbers)
@@ -205,17 +215,18 @@ class DecimalCalculation {
     }
 }
 
-let inputdatavalidation = InputDataValidation.sharedInstance
+let inputdatavalidation = InputDataValidation()
 inputdatavalidation.manageData(input: "3")
+inputdatavalidation.manageData(input: "/")
+inputdatavalidation.manageData(input: "5")
+inputdatavalidation.manageData(input: "*")
+inputdatavalidation.manageData(input: "4")
 inputdatavalidation.manageData(input: "+")
 inputdatavalidation.manageData(input: "2")
-inputdatavalidation.manageData(input: "/")
-inputdatavalidation.manageData(input: "1")
-print(inputdatavalidation.medianNotation)
+inputdatavalidation.manageData(input: "*")
+inputdatavalidation.manageData(input: "8")
+print(Data.medianNotation)
 
-let generalCalculation: GeneralCalculation = GeneralCalculation.sharedInstance
+let generalCalculation: GeneralCalculation = GeneralCalculation()
 generalCalculation.convertToPostfixNotation()
-print(generalCalculation.postfixNotation)
-
-let decimalCalculator: DecimalCalculation = DecimalCalculation()
-decimalCalculator.calculatePostfixNotation()
+print(Data.postfixNotation)

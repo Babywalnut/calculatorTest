@@ -7,76 +7,10 @@
 
 import Foundation
 
-class BinaryInputDataValidation: InputDataValidatable{
-    static let sharedInstance = BinaryInputDataValidation()
-    var userInput:[String] = []
-    let operators = ["&", "~&", "|", "~|", "^", "~", ">>", "<<", "+", "-"]
-    
-    private init() {}
-    
-    private func filterAdditionalIncomingData(_ currentData: String, after previousData: String ) {
-        switch operators.contains(previousData) {
-        case true :
-            if operators.contains(currentData){
-                userInput.removeLast()
-                userInput.append(currentData)
-            } else {
-                userInput.append(currentData)
-            }
-        case false :
-            if operators.contains(currentData) {
-                userInput.append(currentData)
-            } else {
-                userInput.removeLast()
-                userInput.append(previousData + currentData)
-            }
-        }
-    }
-    
-    private func filterInitialIncomingData(_ inputData: String) {
-        if inputData == "~" || !operators.contains(inputData) {
-            userInput.append(inputData)
-        } else {
-            userInput = []
-        }
-    }
-    
-    func manageData(input: String) {
-        if userInput.isEmpty {
-            filterInitialIncomingData(input)
-        }
-        guard let finalElement = userInput.last else { return }
-        
-        filterAdditionalIncomingData(input, after: finalElement)
-    }
-}
-
-class BinaryCalculation: Calculatable {
-    
-    typealias Precedence = Int
-    
-    let operatorPriority: [String : Precedence] =
-        [">>" : 4, "<<" : 4 ,"&" : 3, "~&" : 3, "|" : 2, "~|" : 2, "^" : 2, "+" : 2, "-" : 2, "~" : 1]
-    let customOperatorGruop: [String] = ["~&", "~|"]
-    var medianNotation: [String] = BinaryInputDataValidation.sharedInstance.userInput
-    var postfixNotation: [String] = []
+class BinaryCalculation {
     var operatorStack = Stack<String>()
     var firstOperand = Int()
     var secondOperand = Int()
-    
-    func convertToPostfixNotation() {
-        guard let lastElement = medianNotation.last else { return }
-        
-        if lastElement == "~" || !operatorPriority.keys.contains(lastElement) {
-            for index in medianNotation {
-                distinguishOperatorFromOperand(index)
-            }
-        } else {
-            medianNotation.removeLast()
-        }
-        appendRemainingOperators()
-        calculatePostfixNotation()
-    }
     
     func pad(string : String, toSize: Int) -> String {
         var padded = string
@@ -86,11 +20,11 @@ class BinaryCalculation: Calculatable {
         return padded
     }
     
-    private func calculatePostfixNotation() {
+    func calculatePostfixNotation() {
         var operandStack = Stack<Int>()
         
-        for element in postfixNotation {
-            if !operatorPriority.keys.contains(element) {
+        for element in Data.postfixNotation {
+            if !Operators.list.contains(element) {
                 guard let numbers = Int(element) else { return }
                 
                 operandStack.push(numbers)
@@ -103,7 +37,7 @@ class BinaryCalculation: Calculatable {
                 let resultNumber = Int(~binaryNumber)
                 operandStack.push(resultNumber)
             }
-            else if customOperatorGruop.contains(element) {
+            else if element == "~&" || element == "~|" || element == "+" || element == "-" {
                 guard let firstPoppedValue = operandStack.pop(), let secondPoppedValue = operandStack.pop() else { return }
                 
                 firstOperand = firstPoppedValue.value
@@ -116,6 +50,10 @@ class BinaryCalculation: Calculatable {
                     operandStack.push(Int(firstBinaryNumber ~& secondBinaryNumber))
                 case "~|" :
                     operandStack.push(Int(firstBinaryNumber ~| secondBinaryNumber))
+                case "+" :
+                    operandStack.push(Int(firstBinaryNumber &+ secondBinaryNumber))
+                case "-" :
+                    operandStack.push(Int(secondBinaryNumber &- firstBinaryNumber))
                 default :
                     return
                 }
@@ -128,7 +66,7 @@ class BinaryCalculation: Calculatable {
                 
                 switch element {
                 case ">>" :
-                    operandStack.push(firstOperand >> secondOperand)
+                    operandStack.push(secondOperand >> firstOperand)
                 case "<<" :
                     operandStack.push(firstOperand << secondOperand)
                 case "&" :
@@ -137,10 +75,6 @@ class BinaryCalculation: Calculatable {
                     operandStack.push(secondOperand | firstOperand)
                 case "^" :
                     operandStack.push(secondOperand ^ firstOperand)
-                case "+" :
-                    operandStack.push(secondOperand + firstOperand)
-                case "-" :
-                    operandStack.push(secondOperand - firstOperand)
                 default:
                     return
                 }
@@ -150,36 +84,5 @@ class BinaryCalculation: Calculatable {
         
         let binaryNumber = String(result.value, radix: 2)
         print(pad(string: binaryNumber, toSize: 8))
-    }
-    
-    private func distinguishOperatorFromOperand(_ element: String) {
-        if operatorPriority.keys.contains(element) {
-            pushPriorOperator(element)
-        } else {
-            postfixNotation.append(element)
-        }
-    }
-    
-    private func pushPriorOperator(_ element: String) {
-        if operatorStack.isEmpty() {
-            operatorStack.push(element)
-        } else {
-            guard let peeked = operatorStack.peek() else { return }
-            
-            while operatorPriority[peeked.value]! >= operatorPriority[element]! {
-                guard let popped = operatorStack.pop() else { break }
-                postfixNotation.append(popped.value)
-            }
-            operatorStack.push(element)
-        }
-    }
-    
-    private func appendRemainingOperators() {
-        while !operatorStack.isEmpty() {
-            if let remainder = operatorStack.pop()?.value {
-                postfixNotation.append(remainder)
-            }
-            break
-        }
     }
 }

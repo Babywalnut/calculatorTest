@@ -86,16 +86,18 @@ class InputDataValidation {
     private func filterAdditionalIncomingData(currentData: String, previousData: String) {
         switch Operators.list.contains(previousData) {
         case true :
-            if Operators.list.contains(currentData){
-                Data.medianNotation.removeLast()
+            if currentData == "~" || !Operators.list.contains(currentData) {
                 Data.medianNotation.append(currentData)
-            } else {
+            }
+            else {
+                Data.medianNotation.removeLast()
                 Data.medianNotation.append(currentData)
             }
         case false :
             if Operators.list.contains(currentData) {
                 Data.medianNotation.append(currentData)
-            } else {
+            }
+            else {
                 Data.medianNotation.removeLast()
                 Data.medianNotation.append(previousData + currentData)
             }
@@ -105,7 +107,8 @@ class InputDataValidation {
     private func filterInitialIncomingData(_ inputData: String) {
         if inputData == "~" || !Operators.list.contains(inputData) {
             Data.medianNotation.append(inputData)
-        } else {
+        }
+        else {
             Data.medianNotation = []
         }
     }
@@ -122,8 +125,9 @@ class InputDataValidation {
     }
 }
 
-class GeneralCalculation {
+class GeneralCalculator {
     var decimalCalcualtion = DecimalCalculation()
+    var binaryCalculation = BinaryCalculation()
     var operatorStack = Stack<String>()
     
     private func distinguishOperatorFromOperand(_ element: String) {
@@ -161,7 +165,7 @@ class GeneralCalculation {
         }
     }
     
-    func convertToPostfixNotation() {
+    func executeDecimalCalculation() {
         if Operators.list.contains(Data.medianNotation.last!) {
             Data.medianNotation.removeLast()
         }
@@ -171,12 +175,22 @@ class GeneralCalculation {
         appendRemainingOperators()
         decimalCalcualtion.calculatePostfixNotation()
     }
+    
+    func executeBinaryCalculation() {
+        if Operators.list.contains(Data.medianNotation.last!) {
+            Data.medianNotation.removeLast()
+        }
+        for element in Data.medianNotation {
+            distinguishOperatorFromOperand(element)
+        }
+        appendRemainingOperators()
+        binaryCalculation.calculatePostfixNotation()
+    }
+    
 }
 
 
 class DecimalCalculation {
-    typealias Precedence = Int
-    
     var firstOperand = Double()
     var secondOperand = Double()
     
@@ -216,17 +230,21 @@ class DecimalCalculation {
 }
 
 let inputdatavalidation = InputDataValidation()
-inputdatavalidation.manageData(input: "3")
-inputdatavalidation.manageData(input: "/")
 inputdatavalidation.manageData(input: "5")
-inputdatavalidation.manageData(input: "*")
-inputdatavalidation.manageData(input: "4")
-inputdatavalidation.manageData(input: "+")
-inputdatavalidation.manageData(input: "2")
-inputdatavalidation.manageData(input: "*")
-inputdatavalidation.manageData(input: "8")
+inputdatavalidation.manageData(input: "-")
+inputdatavalidation.manageData(input: "15")
+//inputdatavalidation.manageData(input: "+")
+//inputdatavalidation.manageData(input: "~")
+//inputdatavalidation.manageData(input: "2")
+//inputdatavalidation.manageData(input: "*")
+//inputdatavalidation.manageData(input: "4")
+//inputdatavalidation.manageData(input: "+")
+//inputdatavalidation.manageData(input: "2")
+//inputdatavalidation.manageData(input: "*")
+//inputdatavalidation.manageData(input: "8")
 print(Data.medianNotation)
 
-let generalCalculation: GeneralCalculation = GeneralCalculation()
-generalCalculation.convertToPostfixNotation()
+let generalCalculator: GeneralCalculator = GeneralCalculator()
+//generalCalculation.executeDecimalCaculation()
+generalCalculator.executeBinaryCalculation()
 print(Data.postfixNotation)
